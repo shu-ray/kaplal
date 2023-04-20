@@ -1,78 +1,73 @@
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
-#include <Wire.h>
+class Ultrasonic{
+	public:
+		byte trigPin,echoPin;
+		unsigned long duration;
+		Ultrasonic(byte triggerPin,byte echo_Pin){
+			trigPin = triggerPin;
+			echoPin = echo_Pin;
+  		pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
+  		pinMode(echoPin, INPUT); // Sets the echoPin as an Input
+		}
 
-const int trigPin = 9;
-const int echoPin = 10;
-// defines variables
-long duration;
-int distance;
+		int read(){
+  		// Clears the trigPin
+  		digitalWrite(trigPin, LOW);
+  		delayMicroseconds(2);
+  		// Sets the trigPin on HIGH state for 10 micro seconds
+  		digitalWrite(trigPin, HIGH);
+  		delayMicroseconds(10);
+  		digitalWrite(trigPin, LOW);
+  		// Reads the echoPin, returns the sound wave travel time in microseconds
+  		duration = pulseIn(echoPin, HIGH);
+  		// Calculating the distance(cm) by duration(ms) x speed of sound(340m/s) / 2 (sound wave bounce time) 
+  		return round(duration * 0.034 / 2);
+		}
+};
 
-Adafruit_MPU6050 mpu;
+Ultrasonic ultrasY(11,10);
+Ultrasonic ultrasX(6,5);
 
-void gyro(){
-    /* Get new sensor events with the readings */
-	sensors_event_t a, g, temp;
-	mpu.getEvent(&a, &g, &temp);
+class Vector{
+	public:
+		short x,y;
+		Vector(short _x,short _y){
+			x = _x;
+			y = _y;
+		}
+};
 
-	/* Print out the values */
-	Serial.print("Acceleration X: ");
-	Serial.print(a.acceleration.x);
-	Serial.print(", Y: ");
-	Serial.print(a.acceleration.y);
-	Serial.print(", Z: ");
-	Serial.print(a.acceleration.z);
-	Serial.println(" m/s^2");
+Vector kaplal(0,0);
 
-	Serial.print("Rotation X: ");
-	Serial.print(g.gyro.x);
-	Serial.print(", Y: ");
-	Serial.print(g.gyro.y);
-	Serial.print(", Z: ");
-	Serial.print(g.gyro.z);
-	Serial.println(" rad/s");
+struct reference{
+	short x,y,diffX,diffY;
+}referee ;
 
-	Serial.print("Temperature: ");
-	Serial.print(temp.temperature);
-	Serial.println(" degC");
-
-	Serial.println("");
-}
-
-void ultras(){
-    // Clears the trigPin
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  // Sets the trigPin on HIGH state for 10 micro seconds
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-  // Reads the echoPin, returns the sound wave travel time in microseconds
-  duration = pulseIn(echoPin, HIGH);
-  // Calculating the distance
-  distance = duration * 0.034 / 2;
-  // Prints the distance on the Serial Monitor
-  Serial.print("Distance: ");
-  Serial.println(distance);
-
+void init_setup(){
+	// double degres = mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0);
+	referee.x = mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0);
+	referee.y = referee.x + 90;
 }
 
 void setup() {
-  pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
-  pinMode(echoPin, INPUT); // Sets the echoPin as an Input
   Serial.begin(9600); // Starts the serial communication
-
-    // if (!mpu.begin()) {
-	// 	Serial.println("Failed to find MPU6050 chip");
-	// 	while (1) {
-	// 	  delay(10);
-	// 	}
-	// }
-
+	init_setup();
+	Serial.println(referee.x);
+	Serial.println(referee.y);
 }
 void loop() {
+	//test();
+}
 
-    ultras();
+// map() math function with decimal-point implementation
+double mapDouble(double x, double in_min, double in_max, double out_min, double out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
-    delay(500);
+void test(){
+	Serial.print("X: "); Serial.print(ultrasX.read());
+	Serial.print("\tY: "); Serial.print(ultrasY.read());
+
+	// Substitute magnetometer compasss module with a simple potentiometer
+	 Serial.print("\tPotRot: "); Serial.println(mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0));
+	delay(200);
 }
