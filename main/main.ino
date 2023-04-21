@@ -43,37 +43,15 @@ struct degrees{
 	double compass;			// Current compass read
 	double adjref;	// Which start of quadrant to be adjacent of formed right-angled triangle 
 	double angleDiff;	// Subtraction of current compass read and referenced adjacent of quadrant
-
-	// Indicate which ultrasonic readings to calculate X or Y axis coordinate value (X=0,  Y=1)
-	bool flagA = 1;
-	bool flagB = 0;
 } deg;
 
-void init_setup(){
-	deg.adjref = mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0);
-}
-
-Vector getCoordinates(){
-	deg.compass = mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0);
-	deg.angleDiff = deg.compass - deg.adjref;
-
-	double x,y;
-
-	// Compass 
-	if (deg.angleDiff){
-		
-	}
-
-	ultrasB.update();
-	ultrasA.update();
-
-	Vector coordinate(0,0);
-	return coordinate;
-}
+// Overall space of box = 200x200
+const int totalX = 200;
+const int totalY = 200;
 
 void setup() {
   Serial.begin(9600); // Starts the serial communication
-	init_setup();
+	deg.adjref = mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0);
 	Serial.println(deg.adjref);
 }
 void loop() {
@@ -85,7 +63,47 @@ double mapDouble(double x, double in_min, double in_max, double out_min, double 
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-void test(){
+Vector getCoordinate(){
+	deg.compass = mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0);
+	deg.angleDiff = deg.compass - deg.adjref;
+
+	// Right-angled triangle's adjacent segway 
+	if (abs(deg.angleDiff) >= 45){
+		if(deg.angleDiff < 0){
+			deg.adjref -= 90;		// Set the next quadrant
+		}
+		else if (deg.angleDiff > 0){
+			deg.adjref += 90;		// Set the previous quadrant
+		}
+		deg.angleDiff = deg.compass - deg.adjref;	// Calc new angleDiff with new adjacent
+	}
+	
+	ultrasA.update();
+	ultrasB.update();
+	double x,y;
+
+	// All quadrants in these conditionals are rotated -45 as the shape of the space is a box (4-gons)
+	if (deg.compass > 315.0 && deg.compass < 45.0){
+		y = totalY - (ultrasA.value * cos(deg.angleDiff));
+		x = totalX - (ultrasB.value * cos(deg.angleDiff));
+	}
+	else if (deg.compass > 225  && deg.compass < 135){
+		x = ultrasA.value * cos(deg.angleDiff);
+		y = totalY - (ultrasB.value * cos(deg.angleDiff));
+	}
+	else if (deg.compass > 135 && deg.compass < 225){
+		x = ultrasB.value * cos(deg.angleDiff);
+		y = ultrasA.value * cos(deg.angleDiff);
+	}
+	else if (deg.compass > 45 && deg.compass < 135){
+		x = totalX - (ultrasA.value * cos(deg.angleDiff));
+		y = ultrasB.value * cos(deg.angleDiff);
+	}
+	Vector tmp(x,y);
+	return tmp;
+}
+
+void setupTest(){
 	ultrasA.update();
 	ultrasB.update();
 	Serial.print("X: "); Serial.print(ultrasB.value);
@@ -95,3 +113,12 @@ void test(){
 	 Serial.print("\tPotRot: "); Serial.println(mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0));
 	delay(200);
 }
+
+void coordinateTest(){
+	Serial.print("Compass: "); Serial.print(deg.compass);
+	Serial.print("\tDiff: "); Serial.print(deg.angleDiff); 
+	Serial.print("\tpos: "); Serial.print(getCoordinate().x); Serial.print(","); Serial.println(getCoordinate().y);
+
+	delay(100);
+}
+
