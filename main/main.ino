@@ -40,26 +40,28 @@ class Vector{
 Vector kaplal(0,0);
 
 struct degrees{
-	double A,B;			// Current compass read
-	double refA,refB;	// Which start of quadrant to be adjacent of formed right-angled triangle (in degrees) 
-	double diffA,diffB;	// Subtraction of current compass read and referenced start of quadrant (deg)
-	bool flagA,flagB;	// Indicate which ultrasonic readings to calculate X or Y axis coordinate value (X=0,  Y=1)
+	double compass;			// Current compass read
+	double adjref;	// Which start of quadrant to be adjacent of formed right-angled triangle 
+	double angleDiff;	// Subtraction of current compass read and referenced adjacent of quadrant
+
+	// Indicate which ultrasonic readings to calculate X or Y axis coordinate value (X=0,  Y=1)
+	bool flagA = 1;
+	bool flagB = 0;
 } deg;
 
 void init_setup(){
-	// double degres = mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0);
-	deg.refA = mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0);
-	deg.refB = deg.refA + 90;	// always perpendicular to refA quadrant start line
+	deg.adjref = mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0);
 }
 
 Vector getCoordinates(){
-	deg.A = mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0);
-	deg.B = deg.A + 90;
-	deg.diffA = deg.A - deg.refA;
-	deg.diffB = deg.B - deg.refB;
+	deg.compass = mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0);
+	deg.angleDiff = deg.compass - deg.adjref;
 
-	if (deg.diffA > 45.0 || deg.diffB > 45.0){
+	double x,y;
 
+	// Compass 
+	if (deg.angleDiff){
+		
 	}
 
 	ultrasB.update();
@@ -72,8 +74,7 @@ Vector getCoordinates(){
 void setup() {
   Serial.begin(9600); // Starts the serial communication
 	init_setup();
-	Serial.println(deg.refA);
-	Serial.println(deg.refB);
+	Serial.println(deg.adjref);
 }
 void loop() {
 	//test();
@@ -85,8 +86,10 @@ double mapDouble(double x, double in_min, double in_max, double out_min, double 
 }
 
 void test(){
-	Serial.print("X: "); Serial.print(ultrasB.update());
-	Serial.print("\tY: "); Serial.print(ultrasA.update());
+	ultrasA.update();
+	ultrasB.update();
+	Serial.print("X: "); Serial.print(ultrasB.value);
+	Serial.print("\tY: "); Serial.print(ultrasA.value);
 
 	// Substitute magnetometer compasss module with a simple potentiometer
 	 Serial.print("\tPotRot: "); Serial.println(mapDouble(analogRead(A0),0.0,1023.0,0.0,360.0));
